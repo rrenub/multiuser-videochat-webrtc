@@ -12,6 +12,10 @@ io.on('connection', (socket) => {
     const roomId = payload.room
     const roomClients = io.sockets.adapter.rooms[roomId] || { length: 0 }
     const numberOfClients = roomClients.length
+    console.log(`Room ID: ${roomId}`)
+    console.log(`roomClients: ${roomClients}`)
+    console.log(`numberOfClients of ${roomId}: ${numberOfClients}`)
+
 
     // These events are emitted only to the sender socket.
     if (numberOfClients == 0) {
