@@ -7,6 +7,7 @@ const io = require('socket.io')(server)
 app.use('/', express.static(path.join(__dirname, 'public')));
 
 io.on('connection', (socket) => {
+  console.log(`User connected`)
   socket.on('join', (payload) => {
     const roomId = payload.room
     const roomClients = io.sockets.adapter.rooms[roomId] || { length: 0 }
