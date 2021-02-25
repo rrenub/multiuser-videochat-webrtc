@@ -71,11 +71,11 @@ socket.on('webrtc_offer', async (event) => {
   const remotePeerId = event.senderId;
 
   peerConnections[remotePeerId] = new RTCPeerConnection(iceServers)
+  peerConnections[remotePeerId].setRemoteDescription(new RTCSessionDescription(event.sdp))
   addLocalTracks(peerConnections[remotePeerId])
   peerConnections[remotePeerId].ontrack = (event) => setRemoteStream(event, remotePeerId)
   peerConnections[remotePeerId].oniceconnectionstatechange = (event) => checkPeerDisconnect(event, remotePeerId);
   peerConnections[remotePeerId].onicecandidate = (event) => sendIceCandidate(event, remotePeerId)
-  peerConnections[remotePeerId].setRemoteDescription(new RTCSessionDescription(event.sdp))
   await createAnswer(peerConnections[remotePeerId], remotePeerId)
 })
 
