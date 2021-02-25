@@ -42,6 +42,7 @@ io.on('connection', (socket) => {
       senderId: event.senderId
   })})
 
+  //Events emitted to only one peer
   socket.on('webrtc_offer', (event) => {
     console.log(`Sending webrtc_offer event to peers in room ${event.roomId} from peer ${event.senderId} to peer ${event.receiverId}`)
     socket.broadcast.to(event.receiverId).emit('webrtc_offer', {
