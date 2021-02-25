@@ -13,6 +13,11 @@ const mediaConstraints = {
   video: true,
 }
 
+const offerOptions = {
+  offerToReceiveVideo: 1,
+  offerToReceiveAudio: 1,
+};
+
 let localPeerId;
 let localStream;
 var peerConnections = {}; // key is uuid, values are peer connection object and user defined display name string
@@ -71,17 +76,15 @@ socket.on('webrtc_offer', async (event) => {
   const remotePeerId = event.senderId;
 
   peerConnections[remotePeerId] = new RTCPeerConnection(iceServers)
+  console.log(new RTCSessionDescription(event.sdp))
   peerConnections[remotePeerId].setRemoteDescription(new RTCSessionDescription(event.sdp))
-    .then(() => {
-      console.log(`Remote description set on peer ${localPeerId} after offer received`)
-    })
-    .then(() => addLocalTracks(peerConnections[remotePeerId]))
-    .then(() => {
-      peerConnections[remotePeerId].ontrack = (event) => setRemoteStream(event, remotePeerId)
-      peerConnections[remotePeerId].oniceconnectionstatechange = (event) => checkPeerDisconnect(event, remotePeerId);
-      peerConnections[remotePeerId].onicecandidate = (event) => sendIceCandidate(event, remotePeerId)
-      await createAnswer(peerConnections[remotePeerId], remotePeerId)
-    })
+  console.log(`Remote description set on peer ${localPeerId} after offer received`)
+  addLocalTracks(peerConnections[remotePeerId])
+
+  peerConnections[remotePeerId].ontrack = (event) => setRemoteStream(event, remotePeerId)
+  peerConnections[remotePeerId].oniceconnectionstatechange = (event) => checkPeerDisconnect(event, remotePeerId);
+  peerConnections[remotePeerId].onicecandidate = (event) => sendIceCandidate(event, remotePeerId)
+  await createAnswer(peerConnections[remotePeerId], remotePeerId)
 })
 
 socket.on('webrtc_answer', async (event) => {
@@ -89,6 +92,7 @@ socket.on('webrtc_answer', async (event) => {
 
   console.log(`Remote description set on peer ${localPeerId} after answer received`)
   peerConnections[event.senderId].setRemoteDescription(new RTCSessionDescription(event.sdp))
+  //addLocalTracks(peerConnections[event.senderId])
   console.log(new RTCSessionDescription(event.sdp))
 })
 
@@ -121,6 +125,7 @@ function showVideoConference() {
 }
 
 async function setLocalStream(mediaConstraints) {
+  console.log('Local stream set')
   let stream
   try {
     stream = await navigator.mediaDevices.getUserMedia(mediaConstraints)
@@ -136,12 +141,13 @@ function addLocalTracks(rtcPeerConnection) {
   localStream.getTracks().forEach((track) => {
     rtcPeerConnection.addTrack(track, localStream)
   })
+  console.log("Local tracks added")
 }
 
 async function createOffer(rtcPeerConnection, remotePeerId) {
   let sessionDescription
   try {
-    sessionDescription = await rtcPeerConnection.createOffer()
+    sessionDescription = await rtcPeerConnection.createOffer(offerOptions)
     rtcPeerConnection.setLocalDescription(sessionDescription)
   } catch (error) {
     console.error(error)
@@ -160,7 +166,7 @@ async function createOffer(rtcPeerConnection, remotePeerId) {
 async function createAnswer(rtcPeerConnection, remotePeerId) {
   let sessionDescription
   try {
-    sessionDescription = await rtcPeerConnection.createAnswer()
+    sessionDescription = await rtcPeerConnection.createAnswer(offerOptions)
     rtcPeerConnection.setLocalDescription(sessionDescription)
   } catch (error) {
     console.error(error)
@@ -177,7 +183,7 @@ async function createAnswer(rtcPeerConnection, remotePeerId) {
 }
 
 function setRemoteStream(event, remotePeerId) {
-  //console.log('setRemoteStream event: WEBRTC CALL WORKING')
+  console.log('Remote stream set')
   if(event.track.kind == "video") {
     const videoREMOTO = document.createElement('video')
     videoREMOTO.srcObject = event.streams[0];

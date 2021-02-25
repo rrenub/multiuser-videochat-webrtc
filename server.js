@@ -37,7 +37,7 @@ io.on('connection', (socket) => {
 
   // These events are emitted to all the sockets connected to the same room except the sender.
   socket.on('start_call', (event) => {
-    console.log(`Broadcasting start_call event to peers in room ${event.roomId} from peer ${event.peerUUID}`)
+    console.log(`Broadcasting start_call event to peers in room ${event.roomId} from peer ${event.senderId}`)
     socket.broadcast.to(event.roomId).emit('start_call', {
       senderId: event.senderId
   })})
