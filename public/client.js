@@ -72,6 +72,8 @@ socket.on('webrtc_offer', async (event) => {
 
   peerConnections[remotePeerId] = new RTCPeerConnection(iceServers)
   peerConnections[remotePeerId].setRemoteDescription(new RTCSessionDescription(event.sdp))
+  console.log(`Remote description set on peer ${localPeerId} after offer received`)
+
   addLocalTracks(peerConnections[remotePeerId])
   peerConnections[remotePeerId].ontrack = (event) => setRemoteStream(event, remotePeerId)
   peerConnections[remotePeerId].oniceconnectionstatechange = (event) => checkPeerDisconnect(event, remotePeerId);
@@ -82,6 +84,7 @@ socket.on('webrtc_offer', async (event) => {
 socket.on('webrtc_answer', async (event) => {
   console.log(`Socket event callback: webrtc_answer. RECEIVED from ${event.senderId}`)
 
+  console.log(`Remote description set on peer ${localPeerId} after answer received`)
   peerConnections[event.senderId].setRemoteDescription(new RTCSessionDescription(event.sdp))
   console.log(new RTCSessionDescription(event.sdp))
 })
