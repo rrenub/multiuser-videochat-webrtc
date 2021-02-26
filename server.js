@@ -1,3 +1,11 @@
+/**
+ * Archivo: server.js
+ * Descripción: Servidor Node.js para proceso de señalización
+ * 
+ * Autor: Rubén Delgado González
+ * Fecha: 26-2-21
+ */
+
 const path = require('path')
 const express = require('express')
 const app = express()

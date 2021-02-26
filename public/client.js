@@ -1,4 +1,12 @@
-// DOM elements.
+/**
+ * Archivo: server.js
+ * Descripción: Script para plataforma de videoconferencia en WebRTC
+ * 
+ * Autor: Rubén Delgado González
+ * Fecha: 26-2-21
+ */
+
+// Referencias a elementos del DOM
 const roomSelectionContainer = document.getElementById('room-selection-container')
 const roomInput = document.getElementById('room-input')
 const connectButton = document.getElementById('connect-button')
@@ -12,19 +20,24 @@ const mediaConstraints = {
   audio: true,
   video: true,
 }
-
 const offerOptions = {
   offerToReceiveVideo: 1,
   offerToReceiveAudio: 1,
 };
 
-let localPeerId;
-let localStream;
-var peerConnections = {}; // key is uuid, values are peer connection object and user defined display name string
-let rtcPeerConnection // Connection between the local device and the remote peer.
-let roomId;
+/**
+ * Colección con los objetos RTCPeerConnection.
+ * La clave es el ID del socket (de socket.io) del par remoto y el valor es el objeto RTCPeerConnection
+ * de dicho par remoto.
+ */
+var peerConnections = {}; 
 
-// Free public STUN servers provided by Google.
+let localPeerId; //ID del socket del cliente
+let localStream;
+let rtcPeerConnection // Connection between the local device and the remote peer.
+let roomId; 
+
+// Servidores ICE usados. Solo servidores STUN en este caso.
 const iceServers = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -38,6 +51,10 @@ connectButton.addEventListener('click', () => {
 })
 
 // SOCKET EVENT CALLBACKS =====================================================
+
+/**
+ * Mensaje room_created recibido al unirse a una sala vacía
+ */
 socket.on('room_created', async (event) => {
   localPeerId = event.peerId
   console.log(`Current peer ID: ${localPeerId}`)
@@ -46,6 +63,10 @@ socket.on('room_created', async (event) => {
   await setLocalStream(mediaConstraints)
 })
 
+/**
+ * Mensaje room_joined al unirse a una sala con pares conectados. Comienza la llamada enviando
+ * start_call
+ */
 socket.on('room_joined', async (event) => {
   localPeerId = event.peerId
   console.log(`Current peer ID: ${localPeerId}`)
@@ -59,6 +80,9 @@ socket.on('room_joined', async (event) => {
   })
 })
 
+/**
+ * Mensaje start_call recibido y crea el objeto RTCPeerConnection para enviar la oferta al otro par
+ */
 socket.on('start_call', async (event) => {
   const remotePeerId = event.senderId;
   console.log(`Socket event callback: start_call. RECEIVED from ${remotePeerId}`)
@@ -71,6 +95,9 @@ socket.on('start_call', async (event) => {
   await createOffer(peerConnections[remotePeerId], remotePeerId)
 })
 
+/**
+ * Mensaje webrtc_offer recibido con la oferta y envía la respuesta al otro par
+ */
 socket.on('webrtc_offer', async (event) => {
   console.log(`Socket event callback: webrtc_offer. RECEIVED from ${event.senderId}`)
   const remotePeerId = event.senderId;
@@ -87,6 +114,9 @@ socket.on('webrtc_offer', async (event) => {
   await createAnswer(peerConnections[remotePeerId], remotePeerId)
 })
 
+/**
+ * Mensaje webrtc_answer recibido y termina el proceso offer/answer.
+ */
 socket.on('webrtc_answer', async (event) => {
   console.log(`Socket event callback: webrtc_answer. RECEIVED from ${event.senderId}`)
 
@@ -96,6 +126,9 @@ socket.on('webrtc_answer', async (event) => {
   console.log(new RTCSessionDescription(event.sdp))
 })
 
+/**
+ * Mensaje webrtc_ice_candidate. Candidato ICE recibido de otro par
+ */
 socket.on('webrtc_ice_candidate', (event) => {
   const senderPeerId = event.senderId;
   console.log(`Socket event callback: webrtc_ice_candidate. RECEIVED from ${senderPeerId}`)
@@ -109,6 +142,10 @@ socket.on('webrtc_ice_candidate', (event) => {
 })
 
 // FUNCTIONS ==================================================================
+
+/**
+ * Envía mensaje join al servidor. Servidor responderá con room_joined o room_created
+ */
 function joinRoom(room) {
   if (room === '') {
     alert('Please type a room ID')
@@ -119,11 +156,17 @@ function joinRoom(room) {
   }
 }
 
+/**
+ * Cambia el layout para mostrar vídeos al introducir el número de la sala
+ */
 function showVideoConference() {
   roomSelectionContainer.style = 'display: none'
   videoChatContainer.style = 'display: block'
 }
 
+/**
+ * Recoge el stream local multimedia usando API getUserMedia
+ */
 async function setLocalStream(mediaConstraints) {
   console.log('Local stream set')
   let stream
@@ -137,6 +180,9 @@ async function setLocalStream(mediaConstraints) {
   localVideoComponent.srcObject = stream
 }
 
+/**
+ * Añade un stream multimedia al objeto RTCPeerConnection recibido
+ */
 function addLocalTracks(rtcPeerConnection) {
   localStream.getTracks().forEach((track) => {
     rtcPeerConnection.addTrack(track, localStream)
@@ -144,6 +190,9 @@ function addLocalTracks(rtcPeerConnection) {
   console.log("Local tracks added")
 }
 
+/**
+ * Crea la oferta con la información SDP y la envía con el mensaje webrtc_offer
+ */
 async function createOffer(rtcPeerConnection, remotePeerId) {
   let sessionDescription
   try {
@@ -163,6 +212,9 @@ async function createOffer(rtcPeerConnection, remotePeerId) {
   })
 }
 
+/**
+ * Crea la respuesta con la información SDP y la envía con el mensaje webrtc_answer
+ */
 async function createAnswer(rtcPeerConnection, remotePeerId) {
   let sessionDescription
   try {
@@ -182,6 +234,9 @@ async function createAnswer(rtcPeerConnection, remotePeerId) {
   })
 }
 
+/**
+ * Callback cuando se recibe el stream multimedia del par remoto
+ */
 function setRemoteStream(event, remotePeerId) {
   console.log('Remote stream set')
   if(event.track.kind == "video") {
@@ -194,6 +249,9 @@ function setRemoteStream(event, remotePeerId) {
   } 
 }
 
+/**
+ * Envía el candidato ICE recibido del cuando se recibe el evento onicecandidate del objeto RTCPeerConnection
+ */
 function sendIceCandidate(event, remotePeerId) {
   if (event.candidate) {
     console.log(`Sending ICE Candidate from peer ${localPeerId} to peer ${remotePeerId}`)
@@ -207,20 +265,16 @@ function sendIceCandidate(event, remotePeerId) {
   }
 }
 
+/**
+ * Comprueba si el par se ha desconectado cuando recibe el evento onicestatechange del objeto RTCPeerConnection
+ */
 function checkPeerDisconnect(event, remotePeerId) {
   var state = peerConnections[remotePeerId].iceConnectionState;
   console.log(`connection with peer ${remotePeerId}: ${state}`);
   if (state === "failed" || state === "closed" || state === "disconnected") {
+    //Se eliminar el elemento de vídeo del DOM si se ha desconectado el par
     console.log(`Peer ${remotePeerId} has disconnected`);
-    //Debería hacerse para que se elimine del HTML el tag de vídeo
+    const videoDisconnected = document.getElementById('remotevideo_' + remotePeerId)
+    videoDisconnected.remove()
   }
 }
-
-function createUUID() {
-  function s4() {
-    return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-  }
-
-  return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-}
-
