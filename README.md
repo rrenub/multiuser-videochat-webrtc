@@ -6,7 +6,7 @@
  
 The signalling process was made based on [this amazing article of Borja Nebbal](https://acidtango.com/thelemoncrunch/how-to-implement-a-video-conference-with-webrtc-and-node/) and adapted for N:N communications. The messages used in this signalling process are shown in the picture below.
 
-![Signalling process](https://i.imgur.com/2cKtNtO.png)
+<img src="https://i.imgur.com/2cKtNtO.png" width="100" height="auto">
 
 ## Usage
 
